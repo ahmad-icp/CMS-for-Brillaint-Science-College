@@ -15,6 +15,14 @@ class Permission(StrEnum):
     ADMISSION_DECIDE = "admission:decide"
     ADMISSION_ENROLL = "admission:enroll"
     MERIT_LIST_MANAGE = "merit_list:manage"
+    ACADEMIC_READ = "academic:read"
+    ACADEMIC_WRITE = "academic:write"
+    ACADEMIC_ASSIGN = "academic:assign"
+    ACADEMIC_DELETE = "academic:delete"
+    TIMETABLE_READ = "timetable:read"
+    TIMETABLE_WRITE = "timetable:write"
+    TIMETABLE_PUBLISH = "timetable:publish"
+    TIMETABLE_DELETE = "timetable:delete"
 
 
 ROLE_PERMISSIONS: dict[str, set[Permission]] = {
@@ -31,10 +39,12 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.ADMISSION_DECIDE,
         Permission.ADMISSION_ENROLL,
         Permission.MERIT_LIST_MANAGE,
+        Permission.ACADEMIC_READ,
+        Permission.TIMETABLE_READ,
     },
-    "teacher": {Permission.STUDENT_READ},
-    "parent": {Permission.STUDENT_READ},
-    "student": {Permission.STUDENT_READ},
+    "teacher": {Permission.STUDENT_READ, Permission.ACADEMIC_READ, Permission.TIMETABLE_READ},
+    "parent": {Permission.STUDENT_READ, Permission.ACADEMIC_READ, Permission.TIMETABLE_READ},
+    "student": {Permission.STUDENT_READ, Permission.ACADEMIC_READ, Permission.TIMETABLE_READ},
 }
 
 
