@@ -10,6 +10,11 @@ class Permission(StrEnum):
     STUDENT_PROMOTE = "student:promote"
     STUDENT_ALUMNI = "student:alumni"
     DOCUMENT_VERIFY = "document:verify"
+    ADMISSION_READ = "admission:read"
+    ADMISSION_WRITE = "admission:write"
+    ADMISSION_DECIDE = "admission:decide"
+    ADMISSION_ENROLL = "admission:enroll"
+    MERIT_LIST_MANAGE = "merit_list:manage"
 
 
 ROLE_PERMISSIONS: dict[str, set[Permission]] = {
@@ -21,6 +26,11 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.STUDENT_READ,
         Permission.STUDENT_WRITE,
         Permission.DOCUMENT_VERIFY,
+        Permission.ADMISSION_READ,
+        Permission.ADMISSION_WRITE,
+        Permission.ADMISSION_DECIDE,
+        Permission.ADMISSION_ENROLL,
+        Permission.MERIT_LIST_MANAGE,
     },
     "teacher": {Permission.STUDENT_READ},
     "parent": {Permission.STUDENT_READ},
