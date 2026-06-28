@@ -67,6 +67,14 @@ class Permission(StrEnum):
     NOTIFICATION_READ = "notification:read"
     NOTIFICATION_SEND = "notification:send"
     NOTIFICATION_MANAGE = "notification:manage"
+    CERTIFICATE_READ = "certificate:read"
+    CERTIFICATE_WRITE = "certificate:write"
+    CERTIFICATE_APPROVE = "certificate:approve"
+    CERTIFICATE_ISSUE = "certificate:issue"
+    CERTIFICATE_MANAGE = "certificate:manage"
+    DOCUMENT_READ = "document:read"
+    DOCUMENT_WRITE = "document:write"
+    DOCUMENT_APPROVE = "document:approve"
 
 
 ROLE_PERMISSIONS: dict[str, set[Permission]] = {
@@ -95,6 +103,10 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.MERIT_READ,
         Permission.TRANSCRIPT_READ,
         Permission.FEE_READ,
+        Permission.CERTIFICATE_READ,
+        Permission.CERTIFICATE_WRITE,
+        Permission.DOCUMENT_READ,
+        Permission.DOCUMENT_WRITE,
         Permission.NOTIFICATION_READ,
         Permission.NOTIFICATION_SEND,
     },
@@ -115,6 +127,8 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.MERIT_READ,
         Permission.TRANSCRIPT_READ,
         Permission.FEE_READ,
+        Permission.CERTIFICATE_READ,
+        Permission.DOCUMENT_READ,
         Permission.TEACHER_PORTAL_READ,
         Permission.NOTIFICATION_READ,
         Permission.NOTIFICATION_SEND,
@@ -133,6 +147,8 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.MERIT_READ,
         Permission.TRANSCRIPT_READ,
         Permission.FEE_READ,
+        Permission.CERTIFICATE_READ,
+        Permission.DOCUMENT_READ,
         Permission.PARENT_PORTAL_READ,
         Permission.NOTIFICATION_READ,
     },
@@ -150,6 +166,8 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.MERIT_READ,
         Permission.TRANSCRIPT_READ,
         Permission.FEE_READ,
+        Permission.CERTIFICATE_READ,
+        Permission.DOCUMENT_READ,
         Permission.STUDENT_PORTAL_READ,
         Permission.NOTIFICATION_READ,
     },

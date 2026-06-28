@@ -23,3 +23,4 @@ The backend exposes a versioned REST API under `/api/v1`. OpenAPI documentation 
 - [Enterprise Finance](FINANCE.md)
 - [User Portals](PORTALS.md)
 - [Notification Center](NOTIFICATIONS.md)
+- [Certificate & Document Management](CERTIFICATES_DOCUMENTS.md)

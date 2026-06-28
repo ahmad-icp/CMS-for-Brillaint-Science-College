@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.modules.academic.router import router as academic_router
 from app.modules.attendance.router import router as attendance_router
+from app.modules.certificates.router import router as certificates_router
 from app.modules.examination.router import router as examination_router
 from app.modules.fees.router import router as fees_router
 from app.modules.marks_entry.router import router as marks_entry_router
@@ -42,6 +43,7 @@ api_router.include_router(student_portal_router, prefix="/portal/student", tags=
 api_router.include_router(parent_portal_router, prefix="/portal/parent", tags=["Parent Portal"])
 api_router.include_router(teacher_portal_router, prefix="/portal/teacher", tags=["Teacher Portal"])
 api_router.include_router(notifications_router, prefix="/notifications", tags=["Notification Center"])
+api_router.include_router(certificates_router, prefix="/certificates", tags=["Certificate & Document Management"])
 
 
 @api_router.get("/health", tags=["Health"])
