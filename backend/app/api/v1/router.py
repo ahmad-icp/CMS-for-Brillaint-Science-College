@@ -4,6 +4,12 @@ from app.modules.academic.router import router as academic_router
 from app.modules.attendance.router import router as attendance_router
 from app.modules.examination.router import router as examination_router
 from app.modules.marks_entry.router import router as marks_entry_router
+from app.modules.results.router import router as results_router
+from app.modules.results.gpa_router import router as gpa_router
+from app.modules.results.report_card_router import router as report_card_router
+from app.modules.results.gazette_router import router as gazette_router
+from app.modules.results.merit_router import router as merit_router
+from app.modules.results.transcript_router import router as transcript_router
 from app.modules.admissions.router import router as admissions_router
 from app.modules.authentication.router import router as authentication_router
 from app.modules.settings.router import router as settings_router
@@ -20,6 +26,12 @@ api_router.include_router(timetable_router, prefix="/timetable", tags=["Timetabl
 api_router.include_router(attendance_router, prefix="/attendance", tags=["Attendance Management"])
 api_router.include_router(examination_router, prefix="/examinations", tags=["Examination Management"])
 api_router.include_router(marks_entry_router, prefix="/marks-entry", tags=["Marks Entry"])
+api_router.include_router(results_router, prefix="/results", tags=["Result Processing"])
+api_router.include_router(gpa_router, prefix="/grade-calculations", tags=["GPA & Percentage Calculation"])
+api_router.include_router(report_card_router, prefix="/report-cards", tags=["Report Cards DMC"])
+api_router.include_router(gazette_router, prefix="/gazettes", tags=["Gazette Generation"])
+api_router.include_router(merit_router, prefix="/merit-lists", tags=["Merit Lists"])
+api_router.include_router(transcript_router, prefix="/transcripts", tags=["Transcript Generation"])
 
 
 @api_router.get("/health", tags=["Health"])
