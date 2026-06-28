@@ -90,7 +90,10 @@ class StudentGuardian(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     student_id: Mapped[str] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     full_name: Mapped[str] = mapped_column(String(160), nullable=False)
-    relationship: Mapped[GuardianRelationship] = mapped_column(Enum(GuardianRelationship), nullable=False)
+    # Renamed Python attribute to avoid shadowing sqlalchemy.orm.relationship callable
+    relationship_type: Mapped[GuardianRelationship] = mapped_column(
+        "relationship", Enum(GuardianRelationship), nullable=False
+    )
     mobile: Mapped[str] = mapped_column(String(32), nullable=False)
     email: Mapped[str | None] = mapped_column(String(255))
     occupation: Mapped[str | None] = mapped_column(String(120))
