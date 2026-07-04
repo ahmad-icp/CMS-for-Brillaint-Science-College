@@ -2,10 +2,7 @@ from datetime import date
 
 import pytest
 from fastapi import HTTPException
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from app.db.base import Base
 from app.modules.students.models import StudentStatus, VerificationStatus
 from app.modules.students.schemas import AlumniCreate, DocumentVerification, PromotionCreate, StudentCreate
 from app.modules.students.service import StudentService, normalize_identity
@@ -32,15 +29,6 @@ def make_payload(admission_number="ADM-001"):
         }],
         documents=[{"document_type": "b_form", "title": "B Form", "file_path": "storage/documents/bform.pdf"}],
     )
-
-
-@pytest.fixture()
-def db_session():
-    engine = create_engine("sqlite+pysqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine, expire_on_commit=False)
-    with Session() as session:
-        yield session
 
 
 def test_create_student_prevents_duplicate_identity(db_session):

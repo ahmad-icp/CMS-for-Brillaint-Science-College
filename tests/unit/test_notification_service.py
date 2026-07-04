@@ -1,21 +1,10 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from app.db.base import Base
 from app.modules.notifications.models import NotificationChannel, NotificationStatus, RecipientType, TemplateEvent
 from app.modules.notifications.schemas import EventNotificationRequest, NotificationCreate, TemplateCreate
 from app.modules.notifications.service import NotificationService
 
 
-def db_session():
-    engine = create_engine("sqlite+pysqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine, expire_on_commit=False)
-    return Session()
-
-
-def test_template_rendering_and_queue_processing():
-    service = NotificationService(db_session(), "college-a")
+def test_template_rendering_and_queue_processing(db_session):
+    service = NotificationService(db_session, "college-a")
     template = service.create_template(
         TemplateCreate(
             code="RESULT_EMAIL",
@@ -43,8 +32,8 @@ def test_template_rendering_and_queue_processing():
     assert notification.status == NotificationStatus.SENT
 
 
-def test_external_delivery_without_address_is_failed_and_retry_counted():
-    service = NotificationService(db_session(), "college-a")
+def test_external_delivery_without_address_is_failed_and_retry_counted(db_session):
+    service = NotificationService(db_session, "college-a")
     notification = service.queue_notification(
         NotificationCreate(
             recipient_type=RecipientType.PARENT,
@@ -61,8 +50,8 @@ def test_external_delivery_without_address_is_failed_and_retry_counted():
     assert notification.retry_count == 1
 
 
-def test_event_broadcast_queues_one_notification_per_recipient():
-    service = NotificationService(db_session(), "college-a")
+def test_event_broadcast_queues_one_notification_per_recipient(db_session):
+    service = NotificationService(db_session, "college-a")
     notifications = service.broadcast_event(
         EventNotificationRequest(
             event_type=TemplateEvent.FEE_CHALLAN_ISSUED,

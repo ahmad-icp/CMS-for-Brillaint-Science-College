@@ -31,7 +31,7 @@ def test_mark_and_finalize_attendance(db_session):
     _, version, _, _, slot = seed(db_session)
     student = create_student(db_session)
     service = AttendanceService(db_session, "college-a")
-    session = service.create_session(AttendanceSessionCreate(session_id=version.session_id, section_id=version.section_id, attendance_date=date(2026, 4, 6), teacher_id="t-1", teacher_name="Ada Teacher", time_slot_id=slot.id))
+    session = service.create_session(AttendanceSessionCreate(session_id=version.session_id, section_id=version.section_id, attendance_date=date(2026, 4, 6), teacher_id="t-1", teacher_name="Ada Teacher"))
     records = service.mark_records(session.id, BulkAttendanceMark(records=[AttendanceRecordMark(student_id=student.id, status="present")]), "teacher-1")
     assert records[0].status == "present"
     finalized = service.finalize_session(session.id, "principal-1")
@@ -45,7 +45,7 @@ def test_attendance_summary_counts_late_as_present(db_session):
     _, version, _, _, slot = seed(db_session)
     student = create_student(db_session)
     service = AttendanceService(db_session, "college-a")
-    session = service.create_session(AttendanceSessionCreate(session_id=version.session_id, section_id=version.section_id, attendance_date=date(2026, 4, 6), teacher_id="t-1", teacher_name="Ada Teacher", time_slot_id=slot.id))
+    session = service.create_session(AttendanceSessionCreate(session_id=version.session_id, section_id=version.section_id, attendance_date=date(2026, 4, 6), teacher_id="t-1", teacher_name="Ada Teacher"))
     service.mark_records(session.id, BulkAttendanceMark(records=[AttendanceRecordMark(student_id=student.id, status="late", late_minutes=5)]), "teacher-1")
     summary = service.summary(version.section_id, None, None, None)
     assert summary.total == 1

@@ -14,7 +14,7 @@ def setup_exam(db_session):
     section = db_session.get(Section, version.section_id)
     service = ExaminationService(db_session, "college-a")
     exam_type = service.create_exam_type(ExamTypeCreate(code="midterm", name="Midterm"))
-    exam = service.create_exam(ExamCreate(exam_type_id=exam_type.id, session_id=version.session_id, class_id=section.class_id, section_id=section.id, name="Midterm Class 6A", start_date=date(2026, 4, 6), end_date=date(2026, 4, 10)), "principal-1")
+    exam = service.create_exam(ExamCreate(exam_type_id=exam_type.id, session_id=version.session_id, class_id=section.class_id, section_id=section.id, name="Midterm Class 6A", start_date=date(2026, 4, 1), end_date=date(2026, 4, 30)))
     component = service.add_component(AssessmentComponentCreate(exam_id=exam.id, subject_id=subject.id, component_type="theory", name="Theory", maximum_marks=100, passing_marks=40, weightage=100))
     hall = service.create_hall(ExamHallCreate(name="Main Hall", code="HALL-1", capacity=60))
     return service, exam, subject, component, hall
