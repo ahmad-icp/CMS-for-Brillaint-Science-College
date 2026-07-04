@@ -2,10 +2,7 @@ from datetime import date
 
 import pytest
 from fastapi import HTTPException
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from app.db.base import Base
 from app.modules.admissions.models import AdmissionStatus, MeritListStatus
 from app.modules.admissions.schemas import (
     AdmissionApplicationCreate,
@@ -37,15 +34,6 @@ def application_payload(application_number="APP-001", obtained_marks=450, total_
         total_marks=total_marks,
         documents=[{"document_type": "b_form", "title": "B Form", "file_path": "storage/documents/app-bform.pdf"}],
     )
-
-
-@pytest.fixture()
-def db_session():
-    engine = create_engine("sqlite+pysqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine, expire_on_commit=False)
-    with Session() as session:
-        yield session
 
 
 def test_create_application_calculates_merit_and_blocks_duplicates(db_session):
