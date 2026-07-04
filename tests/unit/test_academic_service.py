@@ -2,20 +2,9 @@ from datetime import date
 
 import pytest
 from fastapi import HTTPException
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from app.db.base import Base
 from app.modules.academic.schemas import AcademicClassCreate, AcademicSessionCreate, DepartmentCreate, InstitutionCreate, ProgramCreate, SectionCreate, SubjectAllocationCreate, SubjectCreate, TeacherAssignmentCreate
 from app.modules.academic.service import AcademicService
-
-@pytest.fixture()
-def db_session():
-    engine = create_engine("sqlite+pysqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine, expire_on_commit=False)
-    with Session() as session:
-        yield session
 
 def seed(service: AcademicService):
     institution = service.create_institution(InstitutionCreate(name="Demo College", code="DC"))
