@@ -1,30 +1,7 @@
 from datetime import date
 
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-
-from app.db.base import Base
-from app.db.session import get_db
-from app.main import app
-
-engine = create_engine("sqlite+pysqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
 
-def override_get_db():
-    with TestingSessionLocal() as session:
-        yield session
-
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
-def setup_function():
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
 
 
 def payload():
@@ -48,7 +25,7 @@ def payload():
     }
 
 
-def test_admission_application_merit_and_enrollment_flow():
+def test_admission_application_merit_and_enrollment_flow(client):
     create_response = client.post("/api/v1/admissions/applications", json=payload(), headers={"X-Role": "admission_officer"})
     assert create_response.status_code == 201
     application = create_response.json()
@@ -95,6 +72,6 @@ def test_admission_application_merit_and_enrollment_flow():
     assert enroll_response.json()["admission_number"] == "STU-API-001"
 
 
-def test_teacher_cannot_create_admission_application():
+def test_teacher_cannot_create_admission_application(client):
     response = client.post("/api/v1/admissions/applications", json=payload(), headers={"X-Role": "teacher"})
     assert response.status_code == 403

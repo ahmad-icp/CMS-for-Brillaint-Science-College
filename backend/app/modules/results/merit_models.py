@@ -15,7 +15,7 @@ class MeritStatus(StrEnum):
 class TieBreaker(StrEnum):
     DOB_OLDER="dob_older"; DOB_YOUNGER="dob_younger"; ADMISSION_NUMBER="admission_number"; NAME="name"
 class MeritList(Base):
-    __tablename__="merit_lists"
+    __tablename__="result_merit_lists"
     __table_args__=(UniqueConstraint("college_id","exam_id","scope_type","scope_id","basis",name="uq_merit_list_scope_basis"), Index("ix_merit_lists_college_exam_status","college_id","exam_id","status"), Index("ix_merit_lists_college_scope","college_id","scope_type","scope_id"))
     id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
     college_id: Mapped[str]=mapped_column(String(64),nullable=False,index=True)
@@ -37,7 +37,7 @@ class MeritListItem(Base):
     __table_args__=(UniqueConstraint("merit_list_id","student_id",name="uq_merit_item_student"), Index("ix_merit_items_list_rank","merit_list_id","rank"),)
     id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
     college_id: Mapped[str]=mapped_column(String(64),nullable=False,index=True)
-    merit_list_id: Mapped[str]=mapped_column(ForeignKey("merit_lists.id",ondelete="CASCADE"),nullable=False,index=True)
+    merit_list_id: Mapped[str]=mapped_column(ForeignKey("result_merit_lists.id",ondelete="CASCADE"),nullable=False,index=True)
     result_id: Mapped[str]=mapped_column(ForeignKey("student_results.id",ondelete="CASCADE"),nullable=False,index=True)
     grade_calculation_id: Mapped[str|None]=mapped_column(ForeignKey("student_grade_calculations.id",ondelete="SET NULL"),index=True)
     student_id: Mapped[str]=mapped_column(ForeignKey("students.id",ondelete="CASCADE"),nullable=False,index=True)

@@ -1,30 +1,7 @@
 from datetime import date
 
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-
-from app.db.base import Base
-from app.db.session import get_db
-from app.main import app
-
-engine = create_engine("sqlite+pysqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
 
-def override_get_db():
-    with TestingSessionLocal() as session:
-        yield session
-
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
-def setup_function():
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
 
 
 def payload():
@@ -45,7 +22,7 @@ def payload():
     }
 
 
-def test_student_crud_promotion_and_alumni_flow():
+def test_student_crud_promotion_and_alumni_flow(client):
     create_response = client.post("/api/v1/students", json=payload(), headers={"X-Role": "administrator"})
     assert create_response.status_code == 201
     student = create_response.json()
@@ -79,6 +56,6 @@ def test_student_crud_promotion_and_alumni_flow():
     assert alumni_response.json()["status"] == "alumni"
 
 
-def test_rbac_blocks_teacher_write_access():
+def test_rbac_blocks_teacher_write_access(client):
     response = client.post("/api/v1/students", json=payload(), headers={"X-Role": "teacher"})
     assert response.status_code == 403

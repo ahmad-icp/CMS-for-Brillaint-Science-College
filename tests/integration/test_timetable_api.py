@@ -1,27 +1,7 @@
 from datetime import date
 
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.db.base import Base
-from app.db.session import get_db
-from app.main import app
 
-engine = create_engine("sqlite+pysqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
-
-def override_get_db():
-    with TestingSessionLocal() as session:
-        yield session
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-def setup_function():
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
 
 def seed_academic():
     institution = client.post("/api/v1/academic/institutions", json={"name":"Demo College","code":"DC"}, headers={"X-Role":"administrator"}).json()
@@ -35,7 +15,7 @@ def seed_academic():
     client.post("/api/v1/academic/teacher-assignments", json={"teacher_id":"t-1", "teacher_name":"Ada Teacher", "section_id":section["id"], "subject_id":subject["id"], "weekly_periods":5}, headers={"X-Role":"administrator"})
     return session, section, subject
 
-def test_timetable_flow_clash_and_permissions():
+def test_timetable_flow_clash_and_permissions(client):
     session, section, subject = seed_academic()
     blocked = client.post("/api/v1/timetable/classrooms", json={"name":"Room 101", "code":"R101", "capacity":40}, headers={"X-Role":"teacher"})
     assert blocked.status_code == 403
