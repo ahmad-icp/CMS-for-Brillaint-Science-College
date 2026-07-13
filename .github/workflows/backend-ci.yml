@@ -1,0 +1,34 @@
+name: Backend CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cep
+          POSTGRES_USER: cep
+          POSTGRES_PASSWORD: cep
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U cep -d cep" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r backend/requirements.txt ruff mypy pip-audit
+      - run: ruff check backend tests
+      - run: mypy backend/app --ignore-missing-imports
+      - run: PYTHONPATH=backend pytest --cov=backend/app --cov-report=xml --cov-fail-under=85
+      - run: pip-audit -r backend/requirements.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: coverage.xml

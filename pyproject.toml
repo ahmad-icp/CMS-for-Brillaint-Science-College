@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 160
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = ["E501", "E701", "E702", "F401", "F403", "F405", "F821", "E741", "E401"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+no_strict_optional = true
+exclude = ["tests"]
