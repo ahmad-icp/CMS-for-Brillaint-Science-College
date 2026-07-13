@@ -25,6 +25,7 @@ if str(BACKEND) not in sys.path:
 # ✅ CRITICAL: Import models EXACTLY ONCE at module level, before any tests run.
 # This ensures all ORM models register their tables with Base.metadata exactly once.
 from app.db.base import Base  # noqa: E402
+from app.core.security import CurrentUser, get_current_user  # noqa: E402
 from app.db.session import get_db  # noqa: E402
 from app.main import create_app  # noqa: E402
 import app.db.models  # noqa: E402,F401
@@ -142,6 +143,11 @@ def app(db_session: Session):
         yield db_session
 
     application.dependency_overrides[get_db] = override_get_db
+
+    def override_get_current_user():
+        return CurrentUser(user_id="test-admin", college_id="college-demo", role="administrator")
+
+    application.dependency_overrides[get_current_user] = override_get_current_user
     try:
         yield application
     finally:

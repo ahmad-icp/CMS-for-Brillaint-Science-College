@@ -7,6 +7,7 @@ registered exactly once through the canonical ``app.*`` package path.
 # Import modules for their mapper/table side effects. Keep this list explicit so
 # model ownership stays clear and circular imports are easier to spot.
 from app.modules.academic import models as academic_models  # noqa: F401
+from app.modules.authentication import models as authentication_models  # noqa: F401
 from app.modules.admissions import models as admissions_models  # noqa: F401
 from app.modules.attendance import models as attendance_models  # noqa: F401
 from app.modules.certificates import models as certificates_models  # noqa: F401
