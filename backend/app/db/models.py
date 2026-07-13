@@ -23,3 +23,5 @@ from app.modules.results import report_card_models  # noqa: F401
 from app.modules.results import transcript_models  # noqa: F401
 from app.modules.students import models as students_models  # noqa: F401
 from app.modules.timetable import models as timetable_models  # noqa: F401
+
+from app.modules.authentication import models as authentication_models  # noqa: F401

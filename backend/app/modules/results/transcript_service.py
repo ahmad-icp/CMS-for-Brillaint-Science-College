@@ -18,7 +18,7 @@ class TranscriptService:
         student=self._get(Student,payload.student_id)
         results=self.db.scalars(select(StudentResult).where(StudentResult.college_id==self.college_id, StudentResult.student_id==student.id).order_by(StudentResult.calculated_at)).unique().all()
         if not results: raise HTTPException(status_code=404, detail="No academic history found for transcript")
-        history=[]; total_obt=total_marks=0; latest_cgpa=None; total_ch=earned_ch=0
+        history=[]; total_obt=0.0; total_marks=0.0; latest_cgpa=None; total_ch=earned_ch=0
         for r in results:
             g=self.db.scalar(select(StudentGradeCalculation).where(StudentGradeCalculation.college_id==self.college_id, StudentGradeCalculation.result_id==r.id))
             history.append({'exam_id':r.exam_id,'percentage':float(r.percentage),'outcome':r.outcome.value,'gpa':float(g.gpa) if g and g.gpa is not None else None,'cgpa':float(g.cgpa) if g and g.cgpa is not None else None,'grade':g.grade if g else None,'subjects':[{'subject_id':s.subject_id,'obtained':float(s.obtained_marks),'maximum':float(s.maximum_marks),'percentage':float(s.percentage),'outcome':s.outcome.value} for s in r.subjects]})

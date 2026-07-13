@@ -1,6 +1,11 @@
 from enum import StrEnum
 
 from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
+from app.modules.authentication.models import User
 
 
 class Permission(StrEnum):
@@ -184,18 +189,25 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
 
 
 class CurrentUser:
-    def __init__(self, user_id: str, college_id: str, role: str) -> None:
+    def __init__(self, user_id: str, college_id: str, role: str, permissions: set[Permission] | None = None) -> None:
         self.user_id = user_id
         self.college_id = college_id
         self.role = role
-        self.permissions = ROLE_PERMISSIONS.get(role, set())
+        self.permissions = permissions if permissions is not None else ROLE_PERMISSIONS.get(role, set())
 
 
 def get_current_user(
     x_user_id: str = Header(default="development-user"),
     x_college_id: str = Header(default="college-demo"),
     x_role: str = Header(default="administrator"),
+    db: Session = Depends(get_db),
 ) -> CurrentUser:
+    user = db.scalar(select(User).where(User.id == x_user_id))
+    if user is not None:
+        permission_names = {permission.name for role in user.roles for permission in role.permissions}
+        permissions = {permission for permission in Permission if permission.value in permission_names}
+        role = user.roles[0].name if user.roles else x_role
+        return CurrentUser(user_id=user.id, college_id=user.college_id, role=role, permissions=permissions)
     return CurrentUser(user_id=x_user_id, college_id=x_college_id, role=x_role)
 
 
