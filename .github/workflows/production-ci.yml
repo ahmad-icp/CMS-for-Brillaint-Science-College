@@ -2,7 +2,7 @@ name: Production CI
 
 on:
   push:
-    branches: [main, "fix/**"]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: production-ci-${{ github.ref }}
+  group: production-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,7 +40,12 @@ jobs:
         env:
           PYTHONPATH: backend
           ENVIRONMENT: test
-        run: pytest -q
+        run: |
+          set +e
+          pytest -q --maxfail=1 > pytest.log 2>&1
+          code=$?
+          cat pytest.log
+          exit $code
       - name: Check critical Python errors
         run: ruff check backend/app tests --select E9,F63,F7,F82
 
