@@ -1,6 +1,14 @@
 from enum import StrEnum
 
 from fastapi import Depends, Header, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.db.session import get_db
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/auth/login", auto_error=False)
 
 
 class Permission(StrEnum):
@@ -191,12 +199,39 @@ class CurrentUser:
         self.permissions = ROLE_PERMISSIONS.get(role, set())
 
 
-def get_current_user(
-    x_user_id: str = Header(default="development-user"),
-    x_college_id: str = Header(default="college-demo"),
-    x_role: str = Header(default="administrator"),
-) -> CurrentUser:
+def _get_dev_header_user(x_user_id: str, x_college_id: str, x_role: str) -> CurrentUser:
+    if not settings.ALLOW_DEV_AUTH_HEADERS:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     return CurrentUser(user_id=x_user_id, college_id=x_college_id, role=x_role)
+
+
+def get_current_user(
+    token: str | None = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+    x_user_id: str | None = Header(default=None),
+    x_college_id: str | None = Header(default=None),
+    x_role: str | None = Header(default=None),
+) -> CurrentUser:
+    if not token and x_user_id and x_college_id and x_role:
+        return _get_dev_header_user(x_user_id, x_college_id, x_role)
+
+    from app.modules.authentication.models import User
+    from app.modules.authentication.service import decode_access_token
+
+    if token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    payload = decode_access_token(token)
+    user_id = str(payload["sub"])
+    user = db.get(User, user_id)
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    if payload.get("college_id") != user.college_id or payload.get("role") != user.role:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token claims no longer match user")
+    return CurrentUser(user_id=user.id, college_id=user.college_id, role=user.role)
 
 
 def require_permission(permission: Permission):
