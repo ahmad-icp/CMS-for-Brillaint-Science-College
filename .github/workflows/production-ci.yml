@@ -29,6 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
           pip install ruff
+          pip check
       - name: Compile backend
         run: python -m compileall -q backend/app
       - name: Verify canonical ORM registration
@@ -36,6 +37,16 @@ jobs:
           PYTHONPATH: backend
           ENVIRONMENT: test
         run: python -c "import app.db.models; from app.db.base import Base; names=list(Base.metadata.tables); assert len(names)==len(set(names)); print(f'{len(names)} tables registered')"
+      - name: Validate fresh database migration
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+          ENVIRONMENT: test
+          DATABASE_URL: sqlite+pysqlite:///migration-smoke.db
+        run: |
+          alembic upgrade head
+          alembic current
+          rm -f migration-smoke.db
       - name: Run backend tests
         id: pytest
         env:
@@ -72,13 +83,19 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=critical
 
   containers:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
+      - name: Validate production Compose
+        run: |
+          cp .env.production.example .env.production
+          docker compose -f docker-compose.production.yml --env-file .env.production config --quiet
       - name: Build backend image
         run: docker build -f backend/Dockerfile -t cep-backend:test .
       - name: Build frontend image
