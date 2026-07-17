@@ -59,7 +59,8 @@ def test_document_approval_workflow(db_session):
             file_path="storage/documents/matric.pdf",
             mime_type="application/pdf",
             checksum_sha256="0" * 64,
-        )
+        ),
+        uploaded_by="registrar",
     )
     approved = service.approve_document(
         document.id,
