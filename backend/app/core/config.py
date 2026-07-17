@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALLOW_DEV_AUTH_HEADERS: bool = True
     CORS_ORIGINS: str = "http://localhost:5173"
+    TRUSTED_HOSTS: str = "localhost,127.0.0.1,testserver"
+    READINESS_TIMEOUT_SECONDS: float = 2.0
+    BACKUP_RETENTION_DAYS: int = 30
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -34,13 +37,21 @@ class Settings(BaseSettings):
                 raise ValueError("JWT_SECRET_KEY must be a strong secret in production")
             if self.ALLOW_DEV_AUTH_HEADERS:
                 raise ValueError("ALLOW_DEV_AUTH_HEADERS must be false in production")
-            if "cep:cep@" in self.DATABASE_URL:
+            if "cep:cep@" in self.DATABASE_URL or "replace-with" in self.DATABASE_URL:
                 raise ValueError("Default database credentials are forbidden in production")
+            if not self.cors_origins or "*" in self.cors_origins:
+                raise ValueError("Production CORS_ORIGINS must contain explicit trusted origins")
+            if not self.trusted_hosts or "*" in self.trusted_hosts:
+                raise ValueError("Production TRUSTED_HOSTS must contain explicit hostnames")
         return self
 
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def trusted_hosts(self) -> list[str]:
+        return [host.strip() for host in self.TRUSTED_HOSTS.split(",") if host.strip()]
 
 
 @lru_cache
