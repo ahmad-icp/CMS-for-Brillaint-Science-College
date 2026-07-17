@@ -1,21 +1,28 @@
-FROM python:3.12.4-slim AS builder
+FROM python:3.12.13-slim-bookworm AS builder
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /build
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.txt ./requirements.txt
 RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --upgrade pip \
     && /opt/venv/bin/pip install -r requirements.txt
 
-FROM python:3.12.4-slim AS runtime
+FROM python:3.12.13-slim-bookworm AS runtime
 
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-RUN groupadd --system app && useradd --system --gid app --home /app app
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system app \
+    && useradd --system --gid app --home /app app
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY backend/app ./app
