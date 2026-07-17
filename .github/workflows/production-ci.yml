@@ -49,7 +49,6 @@ jobs:
           alembic current
           rm -f migration-smoke.db
       - name: Run backend tests with coverage
-        id: pytest
         env:
           PYTHONPATH: backend
           ENVIRONMENT: test
@@ -59,7 +58,18 @@ jobs:
           code=$?
           cat pytest.log
           exit $code
-      - name: Upload test and coverage reports
+      - name: Check Python correctness
+        run: ruff check backend/app tests --select E9,F63,F7,F82
+      - name: Audit Python runtime requirements
+        run: |
+          set +e
+          pip-audit -r backend/requirements.txt --strict > pip-audit.log 2>&1
+          code=$?
+          cat pip-audit.log
+          exit $code
+      - name: Scan backend for high-confidence security defects
+        run: bandit -r backend/app -lll -iii --exclude backend/alembic
+      - name: Upload backend quality reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -67,13 +77,8 @@ jobs:
           path: |
             pytest.log
             coverage.xml
+            pip-audit.log
           if-no-files-found: ignore
-      - name: Check Python correctness
-        run: ruff check backend/app tests --select E9,F63,F7,F82
-      - name: Audit Python runtime requirements
-        run: pip-audit -r backend/requirements.txt --strict
-      - name: Scan backend for high-confidence security defects
-        run: bandit -r backend/app -lll -iii --exclude backend/alembic
 
   frontend:
     runs-on: ubuntu-latest
