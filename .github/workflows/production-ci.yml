@@ -70,8 +70,8 @@ jobs:
           if-no-files-found: ignore
       - name: Check Python correctness
         run: ruff check backend/app tests --select E9,F63,F7,F82
-      - name: Audit Python dependencies
-        run: pip-audit --strict
+      - name: Audit Python runtime requirements
+        run: pip-audit -r backend/requirements.txt --strict
       - name: Scan backend for high-confidence security defects
         run: bandit -r backend/app -lll -iii --exclude backend/alembic
 
