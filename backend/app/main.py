@@ -1,8 +1,15 @@
-from fastapi import FastAPI
+import uuid
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
+from redis import Redis
+from sqlalchemy import text
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.db.session import engine
 
 
 SECURITY_HEADERS = {
@@ -10,6 +17,8 @@ SECURITY_HEADERS = {
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
 }
 
 
@@ -21,26 +30,63 @@ def create_app() -> FastAPI:
         description="Multi-tenant College ERP Platform API",
         docs_url="/docs" if settings.ENVIRONMENT.lower() != "production" else None,
         redoc_url="/redoc" if settings.ENVIRONMENT.lower() != "production" else None,
+        openapi_url="/openapi.json" if settings.ENVIRONMENT.lower() != "production" else None,
     )
 
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],
     )
 
     @app.middleware("http")
-    async def add_security_headers(request, call_next):
+    async def add_operational_headers(request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
         for name, value in SECURITY_HEADERS.items():
             response.headers[name] = value
         return response
 
     @app.get("/health", tags=["health"])
-    def health() -> dict[str, str]:
+    @app.get("/health/live", tags=["health"])
+    def liveness() -> dict[str, str]:
         return {"status": "ok", "environment": settings.ENVIRONMENT}
+
+    @app.get("/health/ready", tags=["health"])
+    def readiness():
+        checks: dict[str, str] = {}
+        try:
+            with engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+            checks["database"] = "ok"
+        except Exception:
+            checks["database"] = "unavailable"
+
+        redis_client: Redis | None = None
+        try:
+            redis_client = Redis.from_url(
+                settings.REDIS_URL,
+                socket_connect_timeout=settings.READINESS_TIMEOUT_SECONDS,
+                socket_timeout=settings.READINESS_TIMEOUT_SECONDS,
+            )
+            redis_client.ping()
+            checks["redis"] = "ok"
+        except Exception:
+            checks["redis"] = "unavailable"
+        finally:
+            if redis_client is not None:
+                redis_client.close()
+
+        ready = all(value == "ok" for value in checks.values())
+        payload = {"status": "ready" if ready else "not_ready", "checks": checks}
+        if not ready:
+            return JSONResponse(status_code=503, content=payload)
+        return payload
 
     app.include_router(api_router, prefix=settings.API_PREFIX)
     return app
