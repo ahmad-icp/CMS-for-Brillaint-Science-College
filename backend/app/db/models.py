@@ -9,6 +9,7 @@ registered exactly once through the canonical ``app.*`` package path.
 from app.modules.academic import models as academic_models  # noqa: F401
 from app.modules.admissions import models as admissions_models  # noqa: F401
 from app.modules.attendance import models as attendance_models  # noqa: F401
+from app.modules.authentication import models as authentication_models  # noqa: F401
 from app.modules.certificates import models as certificates_models  # noqa: F401
 from app.modules.examination import models as examination_models  # noqa: F401
 from app.modules.fees import models as fees_models  # noqa: F401

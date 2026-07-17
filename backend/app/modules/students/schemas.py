@@ -7,11 +7,12 @@ from app.modules.students.models import DocumentType, GuardianRelationship, Stud
 
 class GuardianBase(BaseModel):
     full_name: str = Field(min_length=2, max_length=160)
-    relationship: GuardianRelationship
+    relationship_type: GuardianRelationship = Field(alias="relationship", serialization_alias="relationship")
     mobile: str = Field(min_length=7, max_length=32)
     email: str | None = Field(default=None, max_length=255)
     occupation: str | None = Field(default=None, max_length=120)
     is_primary: bool = False
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class GuardianCreate(GuardianBase):
@@ -20,7 +21,7 @@ class GuardianCreate(GuardianBase):
 
 class GuardianRead(GuardianBase):
     id: str
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class DocumentCreate(BaseModel):
