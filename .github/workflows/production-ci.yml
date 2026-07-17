@@ -43,7 +43,7 @@ jobs:
           ENVIRONMENT: test
         run: |
           set +e
-          pytest -q --maxfail=1 > pytest.log 2>&1
+          pytest -q > pytest.log 2>&1
           code=$?
           cat pytest.log
           exit $code
