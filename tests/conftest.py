@@ -67,7 +67,7 @@ def app(db_session: Session):
 
     def override_current_user(
         x_user_id: str = Header(default="development-user"),
-        x_college_id: str = Header(default="college-demo"),
+        x_college_id: str = Header(default="college-a"),
         x_role: str = Header(default="administrator"),
     ) -> CurrentUser:
         return CurrentUser(user_id=x_user_id, college_id=x_college_id, role=x_role)
