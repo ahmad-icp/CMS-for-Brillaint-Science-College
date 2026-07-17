@@ -66,6 +66,7 @@ def test_schedule_publish_and_lock_exam(db_session):
         "principal-1",
     )
     assert assignment.id
+    db_session.expire_all()
     published = service.publish_exam(exam.id)
     assert published.status == "published"
     locked = service.lock_exam(exam.id)
