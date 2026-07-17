@@ -53,6 +53,7 @@ def test_bulk_submit_lock_and_unlock_marks(db_session):
         "teacher-1",
     )
     assert entries[0].marks_obtained == 88
+    db_session.expire_all()
     submitted = service.submit_batch(batch.id, "teacher-1")
     assert submitted.status == "submitted"
     locked = service.lock_batch(batch.id, "principal-1")
