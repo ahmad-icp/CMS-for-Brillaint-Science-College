@@ -2,8 +2,9 @@ import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
 
+import jwt
 from fastapi import HTTPException, status
-from jose import JWTError, jwt
+from jwt import InvalidTokenError
 from passlib.context import CryptContext
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -48,7 +49,7 @@ def create_access_token(user: User) -> str:
 def decode_access_token(token: str) -> dict[str, object]:
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired access token",
