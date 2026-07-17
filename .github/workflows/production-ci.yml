@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 concurrency:
   group: production-ci-${{ github.event.pull_request.number || github.ref }}
@@ -16,7 +17,7 @@ concurrency:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,11 +25,11 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
-      - name: Install backend dependencies
+      - name: Install backend dependencies and quality tools
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
-          pip install ruff
+          pip install ruff pytest-cov pip-audit bandit
           pip check
       - name: Compile backend
         run: python -m compileall -q backend/app
@@ -47,26 +48,32 @@ jobs:
           alembic upgrade head
           alembic current
           rm -f migration-smoke.db
-      - name: Run backend tests
+      - name: Run backend tests with coverage
         id: pytest
         env:
           PYTHONPATH: backend
           ENVIRONMENT: test
         run: |
           set +e
-          pytest -q > pytest.log 2>&1
+          pytest -q --cov=backend/app --cov-report=term-missing --cov-report=xml:coverage.xml > pytest.log 2>&1
           code=$?
           cat pytest.log
           exit $code
-      - name: Upload pytest log
+      - name: Upload test and coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-log
-          path: pytest.log
+          name: backend-quality-reports
+          path: |
+            pytest.log
+            coverage.xml
           if-no-files-found: ignore
-      - name: Check critical Python errors
+      - name: Check Python correctness
         run: ruff check backend/app tests --select E9,F63,F7,F82
+      - name: Audit Python dependencies
+        run: pip-audit --strict
+      - name: Scan backend for high-confidence security defects
+        run: bandit -r backend/app -lll -iii --exclude backend/alembic
 
   frontend:
     runs-on: ubuntu-latest
@@ -83,12 +90,14 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
+      - name: Verify production bundle
+        run: npm run test:build
       - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=critical
+        run: npm audit --omit=dev --audit-level=high
 
   containers:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
@@ -100,3 +109,19 @@ jobs:
         run: docker build -f backend/Dockerfile -t cep-backend:test .
       - name: Build frontend image
         run: docker build -f frontend/Dockerfile -t cep-frontend:test .
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: cep-backend:test
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: cep-frontend:test
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL
