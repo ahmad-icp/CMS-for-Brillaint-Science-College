@@ -37,6 +37,7 @@ jobs:
           ENVIRONMENT: test
         run: python -c "import app.db.models; from app.db.base import Base; names=list(Base.metadata.tables); assert len(names)==len(set(names)); print(f'{len(names)} tables registered')"
       - name: Run backend tests
+        id: pytest
         env:
           PYTHONPATH: backend
           ENVIRONMENT: test
@@ -46,6 +47,13 @@ jobs:
           code=$?
           cat pytest.log
           exit $code
+      - name: Upload pytest log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-log
+          path: pytest.log
+          if-no-files-found: ignore
       - name: Check critical Python errors
         run: ruff check backend/app tests --select E9,F63,F7,F82
 
