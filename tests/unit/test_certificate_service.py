@@ -57,6 +57,8 @@ def test_document_approval_workflow(db_session):
             document_type=RepositoryDocumentType.ACADEMIC,
             title="Matric Result",
             file_path="storage/documents/matric.pdf",
+            mime_type="application/pdf",
+            checksum_sha256="0" * 64,
         )
     )
     approved = service.approve_document(
