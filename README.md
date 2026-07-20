@@ -73,3 +73,63 @@ deployment/    Deployment manifests and runbooks
 15. Testing, Security, and Deployment
 
 See `docs/Architecture/ARCHITECTURE.md` for the detailed target architecture and module boundaries.
+
+## Local Docker hosting
+
+The default `docker-compose.yml` starts the complete local ERP without using the production environment file or production volume names:
+
+- PostgreSQL and Redis
+- One-time Alembic migration container
+- FastAPI backend
+- Celery worker and Celery beat
+- PostgreSQL backup loop
+- React/Nginx frontend
+
+Start it from the repository root:
+
+```powershell
+.\scripts\start-local.ps1
+```
+
+Or run the equivalent Compose command:
+
+```sh
+docker compose up --build -d
+```
+
+Local URLs:
+
+- ERP frontend: <http://localhost:8080>
+- API documentation: <http://localhost:8000/docs>
+- Backend readiness: <http://localhost:8000/health/ready>
+
+If PostgreSQL reports authentication failures, do **not** delete volumes. The local Compose project intentionally uses separate local credentials and volume names so it does not collide with production. Check whether the existing local volume was created with older credentials, then decide whether to migrate or back up that data before making destructive changes.
+
+## Production Docker hosting
+
+Production uses `docker-compose.production.yml` and requires a private `.env.production` file. The repository tracks `.env.production.example` only; never commit `.env.production`.
+
+```powershell
+Copy-Item .env.production.example .env.production
+# Edit .env.production with real secrets, exact PostgreSQL credentials, Redis password, CORS origins, and trusted hosts.
+.\scripts\start-production.ps1
+```
+
+The production script validates Compose, builds images, starts PostgreSQL and Redis, waits for health checks, stops old app processes, runs migrations once, and then starts backend, Celery, backups, and frontend. It does not remove Docker volumes.
+
+Production validation rejects placeholder or short JWT secrets, development authentication headers, missing or mismatched PostgreSQL credentials, missing or mismatched Redis passwords, wildcard/malformed CORS origins, wildcard trusted hosts, URL values in `TRUSTED_HOSTS`, and invalid timeout/backup settings.
+
+## Backup safety
+
+Database backups are written under `storage/backups` so dumps can survive Docker volume removal. Generated dump, checksum, and partial files are ignored by Git while `storage/backups/.gitkeep` keeps the folder present.
+
+Backups are written to a temporary `.partial` file first, renamed only after `pg_dump` succeeds, and accompanied by a SHA-256 checksum file. Retention cleanup only targets this application's matching `.dump` and `.dump.sha256` files; it does not delete unrelated files in the backup directory.
+
+Local backups on the same computer are not a complete disaster-recovery plan. Regularly copy backup dumps and checksum files to another physical disk or secure cloud storage.
+
+## Troubleshooting
+
+- `migrate` must exit successfully before backend and Celery start. If it fails with an advisory-lock message, another migration is already running; wait for that process or investigate it rather than waiting indefinitely.
+- If the frontend works locally but remote browsers call `localhost:8000`, check `VITE_API_BASE_URL`. Production builds default to `/api/v1` so the browser calls the same host serving the frontend.
+- If `DATABASE_URL` and `POSTGRES_*` disagree in production, fix `.env.production`; do not change or delete existing database volumes.
+- If `REDIS_URL` and `REDIS_PASSWORD` disagree in production, fix `.env.production` so the password appears in both places.

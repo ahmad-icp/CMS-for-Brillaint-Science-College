@@ -1,10 +1,14 @@
 __pycache__/
 *.py[cod]
 .env
+.env.*
+!.env.example
+!.env.production.example
 .venv/
 node_modules/
 dist/
 build/
-storage/backups/*.zip
+storage/backups/*
+!storage/backups/.gitkeep
 storage/documents/*
 !storage/documents/.gitkeep

@@ -12,6 +12,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
+      start_period: 30s
       retries: 10
     networks: [internal]
 
@@ -25,6 +26,7 @@ services:
       test: ["CMD-SHELL", "redis-cli -a '${REDIS_PASSWORD}' ping | grep PONG"]
       interval: 10s
       timeout: 5s
+      start_period: 20s
       retries: 10
     networks: [internal]
 
@@ -35,6 +37,8 @@ services:
     env_file: .env.production
     command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
     restart: "no"
+    healthcheck:
+      disable: true
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,6 +64,8 @@ services:
     restart: unless-stopped
     env_file: .env.production
     command: ["celery", "-A", "app.core.celery_app:celery_app", "worker", "--loglevel=INFO", "--concurrency=2"]
+    healthcheck:
+      disable: true
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -74,6 +80,8 @@ services:
     restart: unless-stopped
     env_file: .env.production
     command: ["celery", "-A", "app.core.celery_app:celery_app", "beat", "--loglevel=INFO", "--schedule=/tmp/celerybeat-schedule"]
+    healthcheck:
+      disable: true
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -91,10 +99,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
       BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_FILE_PREFIX: cep-production
     volumes:
       - ./scripts/backup-postgres.sh:/usr/local/bin/backup-postgres:ro
-      - postgres-backups:/backups
-    command: ["sh", "-c", "while true; do /usr/local/bin/backup-postgres; sleep $${BACKUP_INTERVAL_SECONDS}; done"]
+      - ./scripts/backup-loop.sh:/usr/local/bin/backup-loop:ro
+      - ./storage/backups:/backups
+    command: ["sh", "/usr/local/bin/backup-loop"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,7 +125,6 @@ services:
 volumes:
   postgres-data:
   redis-data:
-  postgres-backups:
 
 networks:
   internal:
