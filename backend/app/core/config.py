@@ -1,6 +1,6 @@
 from functools import lru_cache
 from secrets import token_urlsafe
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -64,12 +64,16 @@ class Settings(BaseSettings):
             if not self.POSTGRES_DB or not self.POSTGRES_USER or not self.POSTGRES_PASSWORD:
                 raise ValueError("POSTGRES_DB, POSTGRES_USER, and POSTGRES_PASSWORD are required in production")
             parsed_db = urlparse(self.DATABASE_URL.replace("postgresql+psycopg://", "postgresql://", 1))
-            if parsed_db.username != self.POSTGRES_USER or parsed_db.password != self.POSTGRES_PASSWORD or parsed_db.path.lstrip("/") != self.POSTGRES_DB:
+            if (
+                unquote(parsed_db.username or "") != self.POSTGRES_USER
+                or unquote(parsed_db.password or "") != self.POSTGRES_PASSWORD
+                or parsed_db.path.lstrip("/") != self.POSTGRES_DB
+            ):
                 raise ValueError("DATABASE_URL credentials must match POSTGRES_* settings")
             if not self.REDIS_PASSWORD:
                 raise ValueError("REDIS_PASSWORD is required in production")
             parsed_redis = urlparse(self.REDIS_URL)
-            if parsed_redis.password != self.REDIS_PASSWORD:
+            if unquote(parsed_redis.password or "") != self.REDIS_PASSWORD:
                 raise ValueError("REDIS_URL password must match REDIS_PASSWORD")
             if not self.cors_origins or "*" in self.cors_origins:
                 raise ValueError("Production CORS_ORIGINS must contain explicit trusted origins")
