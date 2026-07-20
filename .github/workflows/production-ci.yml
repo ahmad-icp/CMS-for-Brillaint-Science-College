@@ -133,7 +133,7 @@ jobs:
           ignore-unfixed: true
           severity: CRITICAL
       - name: Start complete local Docker stack
-        run: docker compose up --build -d --wait
+        run: docker compose up --build -d
       - name: Verify migration completed
         run: docker compose ps --all migrate --format json | jq -e 'select(.Service == "migrate" and .State == "exited" and .ExitCode == 0)'
       - name: Verify backend readiness endpoint
