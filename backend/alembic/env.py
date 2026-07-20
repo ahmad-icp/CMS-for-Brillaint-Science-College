@@ -41,8 +41,14 @@ def run_migrations_online() -> None:
         if connection.dialect.name == "postgresql":
             lock_ms = int(settings.MIGRATION_LOCK_TIMEOUT_SECONDS * 1000)
             statement_ms = int(settings.DB_STATEMENT_TIMEOUT_SECONDS * 1000)
-            connection.execute(text("SET lock_timeout = :timeout_ms"), {"timeout_ms": lock_ms})
-            connection.execute(text("SET statement_timeout = :timeout_ms"), {"timeout_ms": statement_ms})
+            connection.execute(
+                text("SELECT set_config('lock_timeout', :timeout, false)"),
+                {"timeout": f"{lock_ms}ms"},
+            )
+            connection.execute(
+                text("SELECT set_config('statement_timeout', :timeout, false)"),
+                {"timeout": f"{statement_ms}ms"},
+            )
             locked = connection.execute(text("SELECT pg_try_advisory_lock(2026072001)")).scalar()
             if not locked:
                 raise RuntimeError("Another database migration is already running; refusing to wait forever.")
