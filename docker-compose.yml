@@ -2,18 +2,133 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: cep
-      POSTGRES_USER: cep
-      POSTGRES_PASSWORD: cep
+      POSTGRES_DB: ${POSTGRES_DB:-cep_local}
+      POSTGRES_USER: ${POSTGRES_USER:-cep_local}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cep_local_password}
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-local-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 10
 
   redis:
     image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
+    volumes:
+      - redis-local-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://cep_local:cep_local_password@postgres:5432/cep_local}
+      MIGRATION_LOCK_TIMEOUT_SECONDS: ${MIGRATION_LOCK_TIMEOUT_SECONDS:-30}
+      DB_STATEMENT_TIMEOUT_SECONDS: ${DB_STATEMENT_TIMEOUT_SECONDS:-60}
+    command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
+    restart: "no"
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://cep_local:cep_local_password@postgres:5432/cep_local}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,backend}
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://cep_local:cep_local_password@postgres:5432/cep_local}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    command: ["celery", "-A", "app.core.celery_app:celery_app", "worker", "--loglevel=INFO", "--concurrency=2"]
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://cep_local:cep_local_password@postgres:5432/cep_local}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    command: ["celery", "-A", "app.core.celery_app:celery_app", "beat", "--loglevel=INFO", "--schedule=/tmp/celerybeat-schedule"]
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  backup:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-cep_local}
+      POSTGRES_USER: ${POSTGRES_USER:-cep_local}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cep_local_password}
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_FILE_PREFIX: cep-local
+    volumes:
+      - ./scripts/backup-postgres.sh:/usr/local/bin/backup-postgres:ro
+      - ./scripts/backup-loop.sh:/usr/local/bin/backup-loop:ro
+      - ./storage/backups:/backups
+    command: ["sh", "/usr/local/bin/backup-loop"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
-  postgres-data:
+  postgres-local-data:
+  redis-local-data:

@@ -110,6 +110,8 @@ jobs:
         run: |
           cp .env.production.example .env.production
           docker compose -f docker-compose.production.yml --env-file .env.production config --quiet
+      - name: Validate local Compose
+        run: docker compose config --quiet
       - name: Build backend image
         run: docker build -f backend/Dockerfile -t cep-backend:test .
       - name: Build frontend image
@@ -130,3 +132,17 @@ jobs:
           exit-code: "1"
           ignore-unfixed: true
           severity: CRITICAL
+      - name: Start complete local Docker stack
+        run: docker compose up --build -d
+      - name: Verify migration completed
+        run: docker compose ps --all migrate --format json | jq -e 'select(.Service == "migrate" and .State == "exited" and .ExitCode == 0)'
+      - name: Verify backend readiness endpoint
+        run: curl --fail --retry 12 --retry-delay 5 http://localhost:8000/health/ready
+      - name: Verify frontend health endpoint
+        run: curl --fail --retry 12 --retry-delay 5 http://localhost:8080/health
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Cleanup local Docker stack
+        if: always()
+        run: docker compose down --remove-orphans
