@@ -47,6 +47,7 @@ jobs:
         run: |
           alembic upgrade head
           alembic current
+          python -c "from sqlalchemy import create_engine, inspect; names=set(inspect(create_engine('sqlite+pysqlite:///migration-smoke.db')).get_table_names()); required={'users','refresh_tokens','tenant_settings'}; assert required <= names, f'Missing migrated tables: {required - names}'"
           rm -f migration-smoke.db
       - name: Run backend tests with coverage
         env:
