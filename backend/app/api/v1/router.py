@@ -22,12 +22,14 @@ from app.modules.student_portal.router import router as student_portal_router
 from app.modules.parent_portal.router import router as parent_portal_router
 from app.modules.teacher_portal.router import router as teacher_portal_router
 from app.modules.timetable.router import router as timetable_router
+from app.modules.tenant_settings.router import router as tenant_settings_router
 
 api_router = APIRouter()
 api_router.include_router(authentication_router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(academic_router, prefix="/academic", tags=["Academic Management"])
 api_router.include_router(admissions_router, prefix="/admissions", tags=["Admissions Management"])
 api_router.include_router(settings_router, prefix="/settings", tags=["Settings"])
+api_router.include_router(tenant_settings_router, prefix="/tenant-settings", tags=["Institution Setup"])
 api_router.include_router(students_router, prefix="/students", tags=["Student Information System"])
 api_router.include_router(timetable_router, prefix="/timetable", tags=["Timetable Management"])
 api_router.include_router(attendance_router, prefix="/attendance", tags=["Attendance Management"])
