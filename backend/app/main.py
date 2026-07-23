@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -32,10 +32,6 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json" if settings.ENVIRONMENT.lower() != "production" else None,
     )
 
-    app.add_middleware(
-        RequestObservabilityMiddleware,
-        security_headers=SECURITY_HEADERS,
-    )
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts)
     app.add_middleware(
         CORSMiddleware,
@@ -44,6 +40,10 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
         expose_headers=["X-Request-ID"],
+    )
+    app.add_middleware(
+        RequestObservabilityMiddleware,
+        security_headers=SECURITY_HEADERS,
     )
 
     @app.get("/health", tags=["health"])
