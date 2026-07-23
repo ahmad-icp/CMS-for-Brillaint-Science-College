@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     DB_STATEMENT_TIMEOUT_SECONDS: int = 60
     DB_CONNECT_TIMEOUT_SECONDS: int = 10
     MIGRATION_LOCK_TIMEOUT_SECONDS: int = 30
+    LOGIN_MAX_FAILURES: int = 10
+    LOGIN_FAILURE_WINDOW_SECONDS: int = 900
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -46,6 +48,8 @@ class Settings(BaseSettings):
             "DB_STATEMENT_TIMEOUT_SECONDS": self.DB_STATEMENT_TIMEOUT_SECONDS,
             "DB_CONNECT_TIMEOUT_SECONDS": self.DB_CONNECT_TIMEOUT_SECONDS,
             "MIGRATION_LOCK_TIMEOUT_SECONDS": self.MIGRATION_LOCK_TIMEOUT_SECONDS,
+            "LOGIN_MAX_FAILURES": self.LOGIN_MAX_FAILURES,
+            "LOGIN_FAILURE_WINDOW_SECONDS": self.LOGIN_FAILURE_WINDOW_SECONDS,
         }
         for name, value in positive_timeouts.items():
             if value <= 0:
