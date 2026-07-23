@@ -76,11 +76,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    bind = op.get_bind()
-    inspector = sa.inspect(bind)
-    if inspector.has_table("tenant_settings"):
-        op.drop_table("tenant_settings")
-    if inspector.has_table("refresh_tokens"):
-        op.drop_table("refresh_tokens")
-    if inspector.has_table("users"):
-        op.drop_table("users")
+    # The baseline migration historically creates tables dynamically from current
+    # metadata. We cannot know whether this repair revision or the baseline owns an
+    # existing table, so a destructive downgrade would risk deleting user data.
+    # Rollbacks are therefore intentionally data-preserving.
+    pass
