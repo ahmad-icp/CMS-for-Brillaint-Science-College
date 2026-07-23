@@ -152,7 +152,8 @@ are deliberately excluded so credentials and form data are not written to access
 
 Failed sign-in attempts are counted in Redis using a one-way hash of client, college, and username.
 After `LOGIN_MAX_FAILURES` failures, that identity is temporarily blocked for
-`LOGIN_FAILURE_WINDOW_SECONDS`. A successful sign-in clears the counter. The throttle fails open if
+`LOGIN_FAILURE_WINDOW_SECONDS`; the API returns HTTP 429 with a `Retry-After` header. A successful
+sign-in clears the counter. The throttle fails open if
 Redis is unavailable so a cache outage does not lock every administrator out; the readiness endpoint
 still reports Redis as unavailable.
 
