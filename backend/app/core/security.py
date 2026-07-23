@@ -1,14 +1,14 @@
 from enum import StrEnum
 
 from fastapi import Depends, Header, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.session import get_db
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/auth/login", auto_error=False)
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 class Permission(StrEnum):
@@ -191,12 +191,21 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
 }
 
 
+ROLE_ALIASES = {"admin": "administrator", "super_admin": "platform_super_admin"}
+
+
 class CurrentUser:
     def __init__(self, user_id: str, college_id: str, role: str) -> None:
+        canonical_role = ROLE_ALIASES.get(role, role)
+        if canonical_role not in ROLE_PERMISSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Unknown or unsupported role: {role}",
+            )
         self.user_id = user_id
         self.college_id = college_id
-        self.role = role
-        self.permissions = ROLE_PERMISSIONS.get(role, set())
+        self.role = canonical_role
+        self.permissions = ROLE_PERMISSIONS[canonical_role]
 
 
 def _get_dev_header_user(x_user_id: str, x_college_id: str, x_role: str) -> CurrentUser:
@@ -206,12 +215,13 @@ def _get_dev_header_user(x_user_id: str, x_college_id: str, x_role: str) -> Curr
 
 
 def get_current_user(
-    token: str | None = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
     x_user_id: str | None = Header(default=None),
     x_college_id: str | None = Header(default=None),
     x_role: str | None = Header(default=None),
 ) -> CurrentUser:
+    token = credentials.credentials if credentials is not None else None
     if not token and x_user_id and x_college_id and x_role:
         return _get_dev_header_user(x_user_id, x_college_id, x_role)
 
