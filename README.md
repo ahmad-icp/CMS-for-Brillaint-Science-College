@@ -144,6 +144,18 @@ The production script validates Compose, builds images, starts PostgreSQL and Re
 
 Production validation rejects placeholder or short JWT secrets, development authentication headers, missing or mismatched PostgreSQL credentials, missing or mismatched Redis passwords, wildcard/malformed CORS origins, wildcard trusted hosts, URL values in `TRUSTED_HOSTS`, and invalid timeout/backup settings.
 
+## Security and observability
+
+Every API response includes a validated `X-Request-ID` and the backend emits structured request logs
+containing only method, path, status, duration, and correlation ID. Query strings and request bodies
+are deliberately excluded so credentials and form data are not written to access logs.
+
+Failed sign-in attempts are counted in Redis using a one-way hash of client, college, and username.
+After `LOGIN_MAX_FAILURES` failures, that identity is temporarily blocked for
+`LOGIN_FAILURE_WINDOW_SECONDS`. A successful sign-in clears the counter. The throttle fails open if
+Redis is unavailable so a cache outage does not lock every administrator out; the readiness endpoint
+still reports Redis as unavailable.
+
 ## Backup safety
 
 Database backups are written under `storage/backups` so dumps can survive Docker volume removal. Generated dump, checksum, and partial files are ignored by Git while `storage/backups/.gitkeep` keeps the folder present.
