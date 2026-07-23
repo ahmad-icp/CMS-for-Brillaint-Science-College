@@ -1,6 +1,4 @@
-import uuid
-
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -9,6 +7,7 @@ from sqlalchemy import text
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.observability import RequestObservabilityMiddleware
 from app.db.session import engine
 
 
@@ -42,15 +41,10 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
         expose_headers=["X-Request-ID"],
     )
-
-    @app.middleware("http")
-    async def add_operational_headers(request: Request, call_next):
-        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = request_id
-        for name, value in SECURITY_HEADERS.items():
-            response.headers[name] = value
-        return response
+    app.add_middleware(
+        RequestObservabilityMiddleware,
+        security_headers=SECURITY_HEADERS,
+    )
 
     @app.get("/health", tags=["health"])
     @app.get("/health/live", tags=["health"])
