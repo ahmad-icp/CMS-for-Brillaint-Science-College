@@ -16,9 +16,10 @@ def test_request_id_and_structured_log(client, caplog) -> None:
 
 
 def test_unsafe_request_id_is_replaced(client) -> None:
-    response = client.get("/health", headers={"X-Request-ID": "unsafe\nlog-entry"})
+    unsafe_id = "x" * 65
+    response = client.get("/health", headers={"X-Request-ID": unsafe_id})
 
     assert response.status_code == 200
-    assert response.headers["X-Request-ID"] != "unsafe\nlog-entry"
-    assert "\n" not in response.headers["X-Request-ID"]
+    assert response.headers["X-Request-ID"] != unsafe_id
+    assert len(response.headers["X-Request-ID"]) <= 64
     assert response.headers["X-Content-Type-Options"] == "nosniff"
