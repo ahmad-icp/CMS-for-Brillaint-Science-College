@@ -9,7 +9,7 @@ export interface TeacherAssignment { id: string; college_id: string; teacher_id:
 export interface ListResponse<T> { items: T[]; total: number; limit: number; offset: number }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
-const headers = { 'Content-Type': 'application/json', 'X-Role': 'administrator' };
+const headers = { 'Content-Type': 'application/json' };
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}/academic${path}`, { ...options, headers: { ...headers, ...(options.headers ?? {}) } });

@@ -5,8 +5,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-cep_local}
       POSTGRES_USER: ${POSTGRES_USER:-cep_local}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cep_local_password}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres-local-data:/var/lib/postgresql/data
     healthcheck:
@@ -19,8 +17,6 @@ services:
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "6379:6379"
     volumes:
       - redis-local-data:/data
     healthcheck:
@@ -55,10 +51,10 @@ services:
       ENVIRONMENT: development
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://cep_local:cep_local_password@postgres:5432/cep_local}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:8081,http://localhost:5173}
       TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,backend}
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -124,7 +120,7 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-8080}:80"
     depends_on:
       backend:
         condition: service_healthy

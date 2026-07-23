@@ -103,6 +103,31 @@ Local URLs:
 - API documentation: <http://localhost:8000/docs>
 - Backend readiness: <http://localhost:8000/health/ready>
 
+Use the values of `FRONTEND_PORT` and `BACKEND_PORT` from `.env` if you changed them.
+
+## First administrator and sign-in
+
+After the migration container exits successfully, create the first administrator with the supported,
+idempotent bootstrap command:
+
+```powershell
+docker compose exec backend python -m app.modules.authentication.bootstrap --college-id college-001 --email admin@college.local --full-name "System Administrator"
+```
+
+Enter a password of at least 12 characters at the secure prompt. Do not put the password in shell
+history. The command reports success without creating a duplicate if that username or email already
+exists. Then open the frontend and sign in using the same college ID, username `admin`, and password.
+
+The `migrate` container is a one-time job. `Exited (0)` means it successfully brought the database
+schema up to date; it is not expected to stay running.
+
+## Institution setup
+
+After sign-in, open **Institution setup** in the sidebar. Save the official institution name, campus,
+principal, address, contact details, academic year, timezone, currency, logo, and brand colour. These
+values are tenant-scoped and remain in PostgreSQL until deliberately changed or the database volume
+is removed. Use the existing backup service before any destructive volume operation.
+
 If PostgreSQL reports authentication failures, do **not** delete volumes. The local Compose project intentionally uses separate local credentials and volume names so it does not collide with production. Check whether the existing local volume was created with older credentials, then decide whether to migrate or back up that data before making destructive changes.
 
 ## Production Docker hosting
